@@ -14,6 +14,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
 
   List _listaTarefas = [];
+  Map<String, dynamic> _ultimaTarefaRemovida = Map();
   TextEditingController _controllerTarefa = TextEditingController();
 
   Future<File> _getFile() async {
@@ -62,6 +63,74 @@ class _HomeState extends State<Home> {
 
   }
 
+  Widget _criarItemLista(context, index){
+
+    //final item = _listaTarefas[index]['titulo'];
+
+    return Dismissible(
+        key: Key( DateTime.now().millisecondsSinceEpoch.toString() ),
+        direction: DismissDirection.endToStart,
+        onDismissed: (direction){
+
+          //recuperar último item excluído
+          _ultimaTarefaRemovida = _listaTarefas[index];
+
+          //Remove item da lista
+          _listaTarefas.removeAt(index);
+          _salvarArquivo();
+
+          //snackbar
+          final snackbar = SnackBar(
+            duration: Duration(seconds: 5),
+              content: Text("Tarefa removida!!"),
+            action: SnackBarAction(
+                label: "Desfazer",
+                onPressed: (){
+
+                  //Insere novamente item removido na lista
+                  setState(() {
+                    _listaTarefas.insert(index, _ultimaTarefaRemovida);
+                  });
+
+                }
+            ),
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(snackbar);
+
+        },
+        background: Container(
+          color: Colors.red,
+          padding: EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Icon(
+                Icons.delete,
+                color: Colors.white,
+              )
+            ],
+          ),
+        ),
+        child: CheckboxListTile(
+            title: Text( _listaTarefas[index]['titulo'] ),
+            value: _listaTarefas[index]['realizada'],
+            onChanged: (valorAlterado){
+
+              setState(() {
+                _listaTarefas[index]['realizada'] = valorAlterado;
+              });
+
+              _salvarArquivo();
+
+              print("valor: " + valorAlterado.toString() );
+            }
+        )
+    );
+
+  }
+
+
   @override
   void initState() {
     // TODO: implement initState
@@ -78,8 +147,7 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
 
     //_salvarArquivo();
-
-    print("itens: " + _listaTarefas.toString() );
+    //print("itens: " + DateTime.now().millisecondsSinceEpoch.toString() );
 
     return Scaffold(
       appBar: AppBar(
@@ -92,27 +160,7 @@ class _HomeState extends State<Home> {
             Expanded(
                 child: ListView.builder(
                   itemCount: _listaTarefas.length,
-                  itemBuilder: (context, index){
-                    return CheckboxListTile(
-                      title: Text( _listaTarefas[index]['titulo'] ),
-                        value: _listaTarefas[index]['realizada'],
-                        onChanged: (valorAlterado){
-
-                        setState(() {
-                          _listaTarefas[index]['realizada'] = valorAlterado;
-                        });
-
-                        _salvarArquivo();
-
-                          print("valor: " + valorAlterado.toString() );
-                        }
-                    );
-                    /*
-                    return ListTile(
-                      title: Text( _listaTarefas[index]['titulo'] ),
-                    );
-                    */
-                  },
+                  itemBuilder: _criarItemLista,
                 )
 
             )
